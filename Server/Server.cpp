@@ -6,6 +6,7 @@
 #include <iostream>
 #include <windows.h>
 #include <string>
+#include <conio.h>
 // #include <winsock2.h>
 #include <ws2tcpip.h> // WSADATA type; WSAStartup, WSACleanup functions and many more
 using namespace std;
@@ -18,37 +19,49 @@ using namespace std;
 #define DEFAULT_PORT "27015" // a port is a logical construct that identifies a specific process or a type of network service - https://en.wikipedia.org/wiki/Port_(computer_networking)
 
 #define PAUSE 10
-DWORD WINAPI Reciver(void* p)
+
+DWORD WINAPI Shower(void* p)
 {
     while (true)
     {
         SOCKET temp = *((SOCKET*)p);
+        HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        CONSOLE_CURSOR_INFO cci;
+        cci.bVisible = false;
+        cci.dwSize = 100;
+        SetConsoleCursorInfo(h, &cci);
         char* message = new char[DEFAULT_BUFLEN];
+        COORD pers = { 0, 2 };\
         int iResult = recv(temp, message, DEFAULT_BUFLEN, 0); // The recv function is used to read incoming data: https://docs.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-recv
         message[iResult] = '\0';
-        if (iResult > 0)
+        string str = message;
+        int number = stoi(str);
+        auto it = find_if(str.begin(), str.end(), isdigit);
+
+        if (it != str.end()) number = stod(str.c_str() + (it - str.begin()));
+        string st;
+        for (int i = 0, b = 0; i < DEFAULT_BUFLEN; i++)
         {
-            cout << "процесс сервера прислал сообщение: " << message << "\n";
-            Sleep(PAUSE);
-            cout << "байтов получено: " << iResult << "\n";
-            Sleep(PAUSE);
+            if (b == 1)
+            {
+                st += message[i];
+            }
+            else if (message[i] == ' ')
+            {
+                b = 1;
+            }
+            else if (message[i] == '\0')
+            {
+                break;
+            }
         }
-    }
-}
-DWORD WINAPI Sender(void* p)
-{
-    while (true)
-    {
-        SOCKET temp = *((SOCKET*)p);
-        char* answer = new char[DEFAULT_BUFLEN];
-        int iResult = send(temp, answer, (int)strlen(answer), 0);
-        answer[iResult] = '\0';
-        if (iResult > 0) {
-            cin.getline(answer, DEFAULT_BUFLEN);
-            cout << "процесс сервера отправляет ответ: " << answer << "\n";
-            int iSendResult = send(temp, answer, strlen(answer), 0);
-            cout << "байтов получено: " << iResult << "\n";
-        }
+        int number2 = stoi(st);
+        pers.X = number;
+        pers.Y = number2;
+        system("cls");
+        SetConsoleCursorPosition(h, pers);
+        SetConsoleTextAttribute(h, 9);
+        cout << (char)1;
     }
 }
 int main()
@@ -169,83 +182,22 @@ int main()
     // No longer need server socket
     closesocket(ListenSocket);
     // Receive until the peer shuts down the connection
-    CreateThread(0, 0, Sender, &ClientSocket, 0, 0);
-    CreateThread(0, 0, Reciver, &ClientSocket, 0, 0);
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO cci;
+    cci.bVisible = false;
+    cci.dwSize = 100;
+    SetConsoleCursorInfo(h, &cci);
+    system("cls");
+    COORD pers = { 0, 2 };
+    SetConsoleCursorPosition(h, pers);
+    SetConsoleTextAttribute(h, 9);
+    SetConsoleCursorPosition(h, pers);
+    cout << " ";
+    SetConsoleCursorPosition(h, pers);
+    SetConsoleTextAttribute(h, 9);
+    cout << (char)1;
+    CreateThread(0, 0, Shower, &ClientSocket, 0, 0);
     Sleep(INFINITE);
-    char* answer = new char[DEFAULT_BUFLEN];
-    char* message = new char[DEFAULT_BUFLEN];
-    string messages[5]{ "privet", "kak dela", "otlichno", "aga", "poka" };
-    string answers[5]{ "Hi", "Good, how are you", "Good to hear", "yep", "bye" };
-    while (true)
-    {
-        iResult = recv(ClientSocket, message, DEFAULT_BUFLEN, 0); // The recv function is used to read incoming data: https://docs.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-recv
-        message[iResult] = '\0';
-        string temp = message;
-        if (iResult > 0) {
-            cout << "процесс клиента прислал сообщение: " << message << "\n";
-            Sleep(PAUSE);
-            cout << "байтов получено: " << iResult << "\n";
-            Sleep(PAUSE);
-            for (int i = 0; i < 5; i++)
-            {
-                if (temp == messages[i])
-                {
-                    char buf[DEFAULT_BUFLEN];
-                    strcpy_s(buf, DEFAULT_BUFLEN, answers[i].c_str());
-                    cout << "процесс сервера отправляет ответ: " << buf << "\n";
-                    int iSendResult = send(ClientSocket, buf, strlen(buf), 0);
-                    break;
-                }
-                else if(i == 4)
-                {
-                    cout << "процесс сервера отправляет ответ: " << "Don't know what to answer" << "\n";
-                    int iSendResult = send(ClientSocket, "Don't know what to answer", 25, 0);
-                }
-            }
-            /*for (int i = 0; i < DEFAULT_BUFLEN; i++)
-            {
-                if (message[i] == 'p' && message[i + 1] == 'r' && message[i + 2] == 'i' && message[i + 3] == 'v' && message[i + 4] == 'e' && message[i + 5] == 't')
-                {
-                    cout << "процесс сервера отправляет ответ: " << "halo" << "\n";
-                    int iSendResult = send(ClientSocket, "halo", 4, 0);
-                }
-                else if (message[i] == 'k' && message[i + 1] == 'a' && message[i + 2] == 'k' && message[i + 3] == ' ' && message[i + 4] == 'd' && message[i + 5] == 'e' && message[i + 6] == 'l' && message[i + 7] == 'a')
-                {
-                    cout << "процесс сервера отправляет ответ: " << "horosho a y tebya" << "\n";
-                    int iSendResult = send(ClientSocket, "horosho a y tebya", 17, 0);
-                }
-                else if (message[i] == 'o' && message[i + 1] == 't' && message[i + 2] == 'l' && message[i + 3] == 'i' && message[i + 4] == 'c' && message[i + 5] == 'h' && message[i + 6] == 'n' && message[i + 7] == 'o')
-                {
-                    cout << "процесс сервера отправляет ответ: " << "eto horosho" << "\n";
-                    int iSendResult = send(ClientSocket, "eto horosho", 11, 0);
-                }
-                else if (message[i] == 'a' && message[i + 1] == 'g' && message[i + 2] == 'a')
-                {
-                    cout << "процесс сервера отправляет ответ: " << "aga" << "\n";
-                    int iSendResult = send(ClientSocket, "aga", 3, 0);
-                }
-                else if (message[i] == 'p' && message[i + 1] == 'o' && message[i + 2] == 'k' && message[i + 3] == 'a')
-                {
-                    cout << "процесс сервера отправляет ответ: " << "poka" << "\n";
-                    int iSendResult = send(ClientSocket, "poka", 4, 0);
-                }
-            }*/
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////
-        }
-        // Give some answer back to the sender
-
-        //cin.getline(answer, 255);
-
-         // The send function sends data on a connected socket: https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-send
-
-        Sleep(INFINITE);
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    }
-    delete[] answer;
-    delete[] message;
-
-
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 

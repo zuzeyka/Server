@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <windows.h>
+#include <conio.h>
+#include <string>
 // #include <winsock2.h>
 #include <ws2tcpip.h>
 using namespace std;
@@ -17,36 +19,39 @@ using namespace std;
 #define DEFAULT_PORT "27015"
 
 #define PAUSE 10
-DWORD WINAPI Sender(void* p)
+DWORD WINAPI SetCoord(void* p)
 {
+    SOCKET temp = *((SOCKET*)p);
+    COORD pers = { 0, 2 };
+    string coords;
     while (true)
     {
-        SOCKET temp = *((SOCKET*)p);
-        char* answer = new char[DEFAULT_BUFLEN];
-        int iResult = send(temp, answer, (int)strlen(answer), 0);
-        answer[iResult] = '\0';
-        if (iResult > 0) {
-            cin.getline(answer, DEFAULT_BUFLEN);
-            cout << "процесс клиента прислал сообщение: " << answer << "\n";
-            cout << "байтов получено: " << iResult << "\n";
-        }
-    }
-}
-DWORD WINAPI Reciver(void* p)
-{
-    while (true)
-    {
-        SOCKET temp = *((SOCKET*)p);
-        char* message = new char[DEFAULT_BUFLEN];
-        int iResult = recv(temp, message, DEFAULT_BUFLEN, 0); // The recv function is used to read incoming data: https://docs.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-recv
-        message[iResult] = '\0';
-        if (iResult > 0)
+        int direct = _getch();
+        if (direct == 224)
+            direct = _getch();
+
+        if (direct == 77)
         {
-            cout << "процесс сервера прислал сообщение: " << message << "\n";
-            Sleep(PAUSE);
-            cout << "байтов получено: " << iResult << "\n";
-            Sleep(PAUSE);
+            pers.X++;
         }
+        else if (direct == 75)
+        {
+            pers.X--;
+        }
+        else if (direct == 72)
+        {
+            pers.Y++;
+        }
+        else if (direct == 80)
+        {
+            pers.Y--;
+        }
+        coords = pers.X;
+        coords += " ";
+        coords += pers.Y;
+        char buf[DEFAULT_BUFLEN];
+        strcpy_s(buf, DEFAULT_BUFLEN, coords.c_str());
+        send(temp, buf, DEFAULT_BUFLEN, 0);
     }
 }
 int main(int argc, char** argv) // имя сервера при желании можно будет указать через параметры командной строки
@@ -152,21 +157,20 @@ int main(int argc, char** argv) // имя сервера при желании можно будет указать ч
 
     while (true) {
         // Send an initial buffer
-        char* message;
-        message = new char[200];
-        cout << "Client's message to server: ";
-        cin.getline(message, 200);
-        //cin.ignore();
-        iResult = send(ConnectSocket, message, (int)strlen(message), 0);
-        cout << "данные успешно отправлены на сервер: " << message << "\n";
-        cout << "байтов с клиента отправлено: " << iResult << "\n";
+        //char* message;
+        //message = new char[200];
+        //cout << "Client's message to server: ";
+        //cin.getline(message, 200);
+        ////cin.ignore();
+        //iResult = send(ConnectSocket, message, (int)strlen(message), 0);
+        //cout << "данные успешно отправлены на сервер: " << message << "\n";
+        //cout << "байтов с клиента отправлено: " << iResult << "\n";
         Sleep(PAUSE);
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Receive until the peer closes the connection
-        CreateThread(0, 0, Sender, &ConnectSocket, 0, 0);
-        CreateThread(0, 0, Reciver, &ConnectSocket, 0, 0);
+        CreateThread(0, 0, SetCoord, &ConnectSocket, 0, 0);
         Sleep(INFINITY);
     }
     
