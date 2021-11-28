@@ -4,10 +4,10 @@
 
 #include <iostream>
 #include <windows.h>
-#include <conio.h>
-#include <string>
 // #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <conio.h>
+#include "MapsClient.h"
 using namespace std;
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
@@ -18,168 +18,153 @@ using namespace std;
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
 
-#define PAUSE 10
-DWORD WINAPI SetCoord(void* p)
-{
-    SOCKET temp = *((SOCKET*)p);
-    COORD pers = { 0, 2 };
-    string coords;
-    while (true)
-    {
-        int direct = _getch();
-        if (direct == 224)
-            direct = _getch();
+#define PAUSE 50
 
-        if (direct == 77)
-        {
-            pers.X++;
-        }
-        else if (direct == 75)
-        {
-            pers.X--;
-        }
-        else if (direct == 72)
-        {
-            pers.Y++;
-        }
-        else if (direct == 80)
-        {
-            pers.Y--;
-        }
-        coords = pers.X;
-        coords += " ";
-        coords += pers.Y;
-        char buf[DEFAULT_BUFLEN];
-        strcpy_s(buf, DEFAULT_BUFLEN, coords.c_str());
-        send(temp, buf, DEFAULT_BUFLEN, 0);
-    }
-}
+// SOCKET ConnectSocket = INVALID_SOCKET;
+
 int main(int argc, char** argv) // имя сервера при желании можно будет указать через параметры командной строки
 {
-    // я попытался максимально упростить запуск клиентского приложения, поэтому количество параметров командной строки не проверяется!
-    // Validate the parameters
-    //if (argc != 2) {
-    //    printf("usage: %s server-name\n", argv[0]);
-    //    return 10;
-    //}
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    setlocale(0, "");
-    system("title CLIENT SIDE");
-    cout << "процесс клиента запущен!\n";
-    Sleep(PAUSE);
+	setlocale(0, "");
+	system("title CLIENT SIDE");
+	cout << "процесс клиента запущен!\n";
+	Sleep(PAUSE);
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Initialize Winsock
-    WSADATA wsaData;
-    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (iResult != 0) {
-        cout << "WSAStartup failed with error: " << iResult << "\n";
-        return 11;
-    }
-    else {
-        cout << "подключение Winsock.dll прошло успешно!\n";
-        Sleep(PAUSE);
-    }
+	// Initialize Winsock
+	WSADATA wsaData;
+	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != 0) {
+		cout << "WSAStartup failed with error: " << iResult << "\n";
+		return 11;
+	}
+	else {
+		cout << "подключение Winsock.dll прошло успешно!\n";
+		Sleep(PAUSE);
+	}
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    addrinfo hints;
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+	addrinfo hints;
+	ZeroMemory(&hints, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
 
-    // Resolve the server address and port
-    const char* ip = "192.168.1.105"; // по умолчанию, оба приложения, и клиент, и сервер, запускаются на одной и той же машине
+	// Resolve the server address and port
+	const char* ip = "localhost"; // по умолчанию, оба приложения, и клиент, и сервер, запускаются на одной и той же машине
 
-    //iResult = getaddrinfo(argv[1], DEFAULT_PORT, &hints, &result); // раскомментировать, если нужно будет читать имя сервера из командной строки
-    addrinfo* result = NULL;
-    iResult = getaddrinfo(ip, DEFAULT_PORT, &hints, &result);
+	//iResult = getaddrinfo(argv[1], DEFAULT_PORT, &hints, &result); // раскомментировать, если нужно будет читать имя сервера из командной строки
+	addrinfo* result = NULL;
+	iResult = getaddrinfo(ip, DEFAULT_PORT, &hints, &result);
 
-    if (iResult != 0) {
-        cout << "getaddrinfo failed with error: " << iResult << "\n";
-        WSACleanup();
-        return 12;
-    }
-    else {
-        cout << "получение адреса и порта клиента прошло успешно!\n";
-        Sleep(PAUSE);
-    }
+	if (iResult != 0) {
+		cout << "getaddrinfo failed with error: " << iResult << "\n";
+		WSACleanup();
+		return 12;
+	}
+	else {
+		cout << "получение адреса и порта клиента прошло успешно!\n";
+		Sleep(PAUSE);
+	}
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Attempt to connect to an address until one succeeds
-    SOCKET ConnectSocket = INVALID_SOCKET;
+	// Attempt to connect to an address until one succeeds
 
-    for (addrinfo* ptr = result; ptr != NULL; ptr = ptr->ai_next) { // серверов может быть несколько, поэтому не помешает цикл
+	SOCKET ConnectSocket = INVALID_SOCKET;
 
-        // Create a SOCKET for connecting to server
-        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+	for (addrinfo* ptr = result; ptr != NULL; ptr = ptr->ai_next) { // серверов может быть несколько, поэтому не помешает цикл
 
-        if (ConnectSocket == INVALID_SOCKET) {
-            cout << "socket failed with error: " << WSAGetLastError() << "\n";
-            WSACleanup();
-            return 13;
-        }
+		// Create a SOCKET for connecting to server
+		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
-        // Connect to server
-        iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-        if (iResult == SOCKET_ERROR) {
-            closesocket(ConnectSocket);
-            ConnectSocket = INVALID_SOCKET;
-            continue;
-        }
+		if (ConnectSocket == INVALID_SOCKET) {
+			cout << "socket failed with error: " << WSAGetLastError() << "\n";
+			WSACleanup();
+			return 13;
+		}
 
-        cout << "создание сокета на клиенте прошло успешно!\n";
-        Sleep(PAUSE);
+		// Connect to server
+		iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+		if (iResult == SOCKET_ERROR) {
+			closesocket(ConnectSocket);
+			ConnectSocket = INVALID_SOCKET;
+			continue;
+		}
 
-        break;
-    }
+		cout << "создание сокета на клиенте прошло успешно!\n";
+		Sleep(PAUSE);
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+		break;
+	}
 
-    freeaddrinfo(result);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (ConnectSocket == INVALID_SOCKET) {
-        cout << "невозможно подключиться к серверу. убедитесь, что процесс сервера запущен!\n";
-        WSACleanup();
-        return 14;
-    }
-    else {
-        cout << "подключение к серверу прошло успешно!\n";
-        Sleep(PAUSE);
-    }
+	freeaddrinfo(result);
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	if (ConnectSocket == INVALID_SOCKET) {
+		cout << "невозможно подключиться к серверу. убедитесь, что процесс сервера запущен!\n";
+		WSACleanup();
+		return 14;
+	}
+	else {
+		cout << "подключение к серверу прошло успешно!\n";
+		Sleep(PAUSE);
+	}
 
-    while (true) {
-        // Send an initial buffer
-        //char* message;
-        //message = new char[200];
-        //cout << "Client's message to server: ";
-        //cin.getline(message, 200);
-        ////cin.ignore();
-        //iResult = send(ConnectSocket, message, (int)strlen(message), 0);
-        //cout << "данные успешно отправлены на сервер: " << message << "\n";
-        //cout << "байтов с клиента отправлено: " << iResult << "\n";
-        Sleep(PAUSE);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	system("cls");
 
-        // Receive until the peer closes the connection
-        CreateThread(0, 0, SetCoord, &ConnectSocket, 0, 0);
-        Sleep(INFINITY);
-    }
-    
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO cci;
+	cci.bVisible = false;
+	cci.dwSize = 100;
+	SetConsoleCursorInfo(h, &cci);
 
-    // cleanup
-    //closesocket(ConnectSocket);
-    //WSACleanup();
+	COORD map = { 0, 0 };
+	SetConsoleCursorPosition(h, map);
+	SetConsoleTextAttribute(h, 10);
 
-    cout << "процесс клиента прекращает свою работу!\n";
+	Drawmap();
 
-    return 0;
+	SetConsoleCursorPosition(h, ClientCoords);
+	SetConsoleTextAttribute(h, 12);
+	cout << (char)1;
+
+	CreateThread(0, 0, Sender, &ConnectSocket, 0, 0);
+	CreateThread(0, 0, rec, &ConnectSocket, 0, 0);
+
+	Check();
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// shutdown the connection since no more data will be sent
+	iResult = shutdown(ConnectSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR) {
+		cout << "shutdown failed with error: " << WSAGetLastError() << "\n";
+		closesocket(ConnectSocket);
+		WSACleanup();
+		return 16;
+	}
+	else {
+		cout << "процесс клиента инициирует закрытие соединения с сервером.\n";
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// Receive until the peer closes the connection
+
+
+	// cleanup
+	closesocket(ConnectSocket);
+	WSACleanup();
+
+	cout << "процесс клиента прекращает свою работу!\n";
+
+	return 0;
 }
