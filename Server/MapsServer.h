@@ -9,6 +9,8 @@ using namespace std;
 HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 COORD ServerCoords = { 1, 2 };
 COORD ClientCoords = { 2, 2 };
+int ClientCoint = 0;
+int ServerCoint = 0;
 
 enum Keys
 {
@@ -30,6 +32,7 @@ enum Objects
 	RBA = 195, // Right Bottom Angle
 
 	O = 0, // Space
+	M = 3,
 	CL = 1,
 	CS = 2,
 };
@@ -99,6 +102,7 @@ void Check()
 void MovementCharacters(void* p)
 {
 	SOCKET local = *((SOCKET*)p);
+	static int coins = 0;
 	while (true)
 	{
 		int direct = _getch();
@@ -116,7 +120,11 @@ void MovementCharacters(void* p)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ClientCoords.Y][ClientCoords.X] == M)
+				{
+					coins++;
+					FirstMap[ClientCoords.Y][ClientCoords.X] = O;
+				}
 				ServerCoords.X--;
 				FirstMap[ServerCoords.Y][ServerCoords.X] = CS;
 				SetConsoleCursorPosition(h, ServerCoords);
@@ -127,12 +135,16 @@ void MovementCharacters(void* p)
 
 		case K_LEFT:
 			if (FirstMap[ServerCoords.Y][ServerCoords.X + 1] != HW &&
-				FirstMap[ServerCoords.Y][ServerCoords.X - 1] != CL &&
+				FirstMap[ServerCoords.Y][ServerCoords.X + 1] != CL &&
 				FirstMap[ServerCoords.Y][ServerCoords.X + 1] != VW)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ClientCoords.Y][ClientCoords.X] == M)
+				{
+					coins++;
+					FirstMap[ClientCoords.Y][ClientCoords.X] = O;
+				}
 				ServerCoords.X++;
 				FirstMap[ServerCoords.Y][ServerCoords.X] = CS;
 				SetConsoleCursorPosition(h, ServerCoords);
@@ -143,12 +155,16 @@ void MovementCharacters(void* p)
 
 		case K_UP:
 			if (FirstMap[ServerCoords.Y + 1][ServerCoords.X] != HW &&
-				FirstMap[ServerCoords.Y][ServerCoords.X - 1] != CL &&
+				FirstMap[ServerCoords.Y + 1][ServerCoords.X] != CL &&
 				FirstMap[ServerCoords.Y + 1][ServerCoords.X] != VW)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ClientCoords.Y][ClientCoords.X] == M)
+				{
+					coins++;
+					FirstMap[ClientCoords.Y][ClientCoords.X] = O;
+				}
 				ServerCoords.Y++;
 				FirstMap[ServerCoords.Y][ServerCoords.X] = CS;
 				SetConsoleCursorPosition(h, ServerCoords);
@@ -159,12 +175,16 @@ void MovementCharacters(void* p)
 
 		case K_DOWN:
 			if (FirstMap[ServerCoords.Y - 1][ServerCoords.X] != HW &&
-				FirstMap[ServerCoords.Y][ServerCoords.X - 1] != CL &&
+				FirstMap[ServerCoords.Y - 1][ServerCoords.X] != CL &&
 				FirstMap[ServerCoords.Y - 1][ServerCoords.X] != VW)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ClientCoords.Y][ClientCoords.X] == M)
+				{
+					coins++;
+					FirstMap[ClientCoords.Y][ClientCoords.X] = O;
+				}
 				ServerCoords.Y--;
 				FirstMap[ServerCoords.Y][ServerCoords.X] = CS;
 				SetConsoleCursorPosition(h, ServerCoords);
@@ -173,16 +193,24 @@ void MovementCharacters(void* p)
 			}
 			break;
 		}
+		COORD money = { 0, 55 };
+		SetConsoleCursorPosition(h, money);
+		SetConsoleTextAttribute(h, 12);
+		cout << coins;
+		char crd[3];
+		crd[0] = ServerCoords.X;
+		crd[1] = ServerCoords.Y;
+		crd[2] = coins;
+		ServerCoint = coins;
+		SetConsoleCursorPosition(h, ServerCoords);
+		SetConsoleTextAttribute(h, 9);
+		cout << (char)1;
+		SetConsoleCursorPosition(h, ClientCoords);
+		SetConsoleTextAttribute(h, 12);
+		cout << (char)1;
+
+		send(local, crd, 3, 0);
 	}
-	char crd[2];
-	crd[0] = ServerCoords.X;
-	crd[1] = ServerCoords.Y;
-
-	SetConsoleCursorPosition(h, ServerCoords);
-	SetConsoleTextAttribute(h, 12);
-	cout << (char)1;
-
-	send(local, crd, 2, 0);
 }
 
 void Drawmap()
@@ -222,12 +250,82 @@ void Drawmap()
 				ASCII[RBA] = RBA;
 				cout << ASCII[RBA];
 			}
+			else if (FirstMap[i][j] == CL)
+			{
+				HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+				SetConsoleCursorPosition(h, ClientCoords);
+				SetConsoleTextAttribute(h, 12);
+				ASCII[CL] = CL;
+				cout << ASCII[CL];
+				SetConsoleTextAttribute(h, 10);
+			}
+			else if (FirstMap[i][j] == CS)
+			{
+				HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+				SetConsoleCursorPosition(h, ServerCoords);
+				SetConsoleTextAttribute(h, 9);
+				ASCII[CS] = CS;
+				cout << ASCII[CS];
+				SetConsoleTextAttribute(h, 10);
+			}
 			if (FirstMap[i][j] == O)
 			{
 				cout << ' ';
 			}
 		}
 		cout << endl;
+	}
+}
+void GenerationCoins()
+{
+	int count_coin = 20;
+	for (int i = count_coin; i > 0;)
+	{
+		int y = rand() % HEIGHT;
+		int x = rand() % WIDTH;
+		if (FirstMap[y][x] == O)
+		{
+			FirstMap[y][x] == M;
+			i--;
+		}
+	}
+}
+void SendMap(SOCKET temp)
+{
+	char mas[20 * 20];
+
+	int k = 0;
+	for (int j = 0; j < HEIGHT; j++)
+	{
+		for (int i = 0; i < WIDTH; i++)
+		{
+			mas[k] = FirstMap[i][j];
+			k++;
+		}
+	}
+
+	send(temp, mas, 20 * 20, 0);
+}
+DWORD WINAPI Timer(void* p)
+{
+	SOCKET s = *(SOCKET*)(p);
+
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD timer = { 100, 100 };
+	int time = 30;
+	while (true)
+	{
+		SetConsoleCursorPosition(h, timer);
+		SetConsoleTextAttribute(h, 6);
+		cout << "  ";
+		SetConsoleCursorPosition(h, timer);
+		cout << time;
+		Sleep(1000);
+		time--;
+		if (time < 0)
+		{
+			break;
+		}
 	}
 }
 
@@ -238,28 +336,25 @@ DWORD WINAPI rec(void* p)
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCursorPosition(h, ClientCoords);
 	SetConsoleTextAttribute(h, 12);
-
+	char message[2];
 	while (true)
 	{
-		char message[2];
-
+		SetConsoleCursorPosition(h, ClientCoords);
+		cout << " ";
 		if (recv(s, message, 2, 0))
 		{
-			SetConsoleCursorPosition(h, ClientCoords);
-			cout << " ";
 			ClientCoords.X = message[0];
 			ClientCoords.Y = message[1];
-			SetConsoleCursorPosition(h, ClientCoords);
-			SetConsoleTextAttribute(h, 12);
-			cout << (char)1;
+			ClientCoint = message[2];
 		}
+		SetConsoleCursorPosition(h, ClientCoords);
+		SetConsoleTextAttribute(h, 12);
+		cout << (char)1;
 	}
 }
 
 DWORD WINAPI Sender(void* p)
 {
-	SOCKET local = *((SOCKET*)p);
-
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCursorPosition(h, ServerCoords);
 	SetConsoleTextAttribute(h, 9);
