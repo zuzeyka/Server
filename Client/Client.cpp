@@ -27,7 +27,7 @@ int main(int argc, char** argv) // имя сервера при желании можно будет указать ч
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	setlocale(0, "");
+	//setlocale(0, " ");
 	system("title CLIENT SIDE");
 	cout << "процесс клиента запущен!\n";
 	Sleep(PAUSE);
@@ -129,16 +129,17 @@ int main(int argc, char** argv) // имя сервера при желании можно будет указать ч
 	COORD map = { 0, 0 };
 	SetConsoleCursorPosition(h, map);
 	SetConsoleTextAttribute(h, 10);
-
+	recMap(ConnectSocket);
 	Drawmap();
 
 	SetConsoleCursorPosition(h, ClientCoords);
 	SetConsoleTextAttribute(h, 12);
 	cout << (char)1;
 
-	CreateThread(0, 0, Sender, &ConnectSocket, 0, 0);
-	CreateThread(0, 0, rec, &ConnectSocket, 0, 0);
 
+	//CreateThread(0, 0, Sender, &ConnectSocket, 0, 0);
+	CreateThread(0, 0, rec, &ConnectSocket, 0, 0);
+	CreateThread(0, 0, MovementCharacters, &ConnectSocket, 0, 0);
 	Check();
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////

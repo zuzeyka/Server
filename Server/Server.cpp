@@ -22,7 +22,7 @@ using namespace std;
 
 int main()
 {
-	setlocale(0, "");
+	//setlocale(0, "rus");
 	system("title SERVER SIDE");
 	cout << "процесс сервера запущен!\n";
 	Sleep(PAUSE);
@@ -136,7 +136,7 @@ int main()
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// No longer need server socket
-	closesocket(ListenSocket);
+	//closesocket(ListenSocket);
 
 	system("cls");
 
@@ -148,24 +148,22 @@ int main()
 
 	COORD map = { 0, 0 };
 	SetConsoleCursorPosition(h, map);
-	SetConsoleTextAttribute(h, 10);
+	SetConsoleTextAttribute(h, 5);
 
 	Drawmap();
+	DrawPers(CS);
+	DrawPers(CL);
+	SendMap(ClientSocket);
+	/*SetConsoleCursorPosition(h, ServerCoords);
+	SetConsoleTextAttribute(h, 14);
+	cout << (char)1;*/
 
-	SetConsoleCursorPosition(h, ServerCoords);
-	SetConsoleTextAttribute(h, 9);
-	cout << (char)1;
 
-
-	
-	// Receive until the peer shuts down the connection
-
-	CreateThread(0, 0, Sender, &ClientSocket, 0, 0);
+	//CreateThread(0, 0, MovementCharacters, &ClientSocket, 0, 0);
 	CreateThread(0, 0, rec, &ClientSocket, 0, 0);
-
-	
-
+	CreateThread(0, 0, MovementCharacters, &ClientSocket, 0, 0);
 	Check();
+
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// shutdown the connection since we're done
