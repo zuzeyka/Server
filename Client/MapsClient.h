@@ -35,6 +35,7 @@ enum Objects
 	M = 4,
 	CL = 1,
 	CS = 2,
+	M = 3
 };
 
 char FirstMap[HEIGHT][WIDTH] = {};
