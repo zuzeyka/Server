@@ -11,6 +11,8 @@ using namespace std;
 HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 COORD ServerCoords = { 2, 1 };
 COORD ClientCoords = { 1, 1 };
+int ServerCoins = 0;
+int ClientCoins = 0;
 bool thread = 1;
 
 enum Keys
@@ -67,6 +69,29 @@ char FirstMap[HEIGHT][WIDTH] = {
 { VW,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,F,VW},
 { LBA,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,HW,RBA },
 };
+
+bool Timer()
+{
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD timer = { 40, 3 };
+	int time = 30;
+	while (true)
+	{
+		SetConsoleCursorPosition(h, timer);
+		SetConsoleTextAttribute(h, 6);
+		cout << "  ";
+		SetConsoleCursorPosition(h, timer);
+		cout << time;
+		Sleep(1000);
+		time--;
+		if (time < 0)
+		{
+			break;
+		}
+	}
+	return 1;
+}
+
 void DrawPers(int who)
 {
 	if (who == CL)
@@ -82,38 +107,21 @@ void DrawPers(int who)
 		cout << (char)1;
 	}
 }
+
 void Check()
 {
-	while (true)
+	thread = 0;
+	system("cls");
+	if (ClientCoins < ServerCoins)
 	{
-		for (int i = 0; i < HEIGHT; i++)
-		{
-			for (int j = 0; j < WIDTH; j++)
-			{
-				if (FirstMap[i][j] == CL or FirstMap[i][j] == CS)
-				{
-					if (i >= HEIGHT - 5)
-					{
-						if (j >= WIDTH - 2)
-						{
-							thread = 0;
-							system("cls");
-							if (FirstMap[i][j] == CS)
-							{
-								cout << "SERVER WINS!";
-							}
-							else
-							{
-								cout << "CLIENT WINS!";
-							}
-							Sleep(3000);
-							exit(0);
-						}
-					}
-				}
-			}
-		}
+		cout << "Server coins - " << ServerCoins << " Client coins - " << ClientCoins << " SERVER WINS!";
 	}
+	else
+	{
+		cout << "Server coins - " << ServerCoins << " Client coins - " << ClientCoins << "CLIENT WINS!";
+	}
+	Sleep(3000);
+	exit(0);
 }
 
 DWORD WINAPI MovementCharacters(void* p)
@@ -135,7 +143,11 @@ DWORD WINAPI MovementCharacters(void* p)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ServerCoords.Y + 1][ServerCoords.X - 1] == M)
+				{
+					FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+					ServerCoins++;
+				}
 				FirstMap[ServerCoords.Y][ServerCoords.X - 1] = CS;
 				ServerCoords.X--;
 				DrawPers(CS);
@@ -149,7 +161,11 @@ DWORD WINAPI MovementCharacters(void* p)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ServerCoords.Y][ServerCoords.X + 1] == M)
+				{
+					FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+					ServerCoins++;
+				}
 				FirstMap[ServerCoords.Y][ServerCoords.X + 1] = CS;
 				ServerCoords.X++;
 				DrawPers(CS);
@@ -163,7 +179,11 @@ DWORD WINAPI MovementCharacters(void* p)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ServerCoords.Y + 1][ServerCoords.X] == M)
+				{
+					FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+					ServerCoins++;
+				}
 				FirstMap[ServerCoords.Y + 1][ServerCoords.X] = CS;
 				ServerCoords.Y++;
 				DrawPers(CS);
@@ -177,7 +197,11 @@ DWORD WINAPI MovementCharacters(void* p)
 			{
 				SetConsoleCursorPosition(h, ServerCoords);
 				cout << " ";
-				FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+				if (FirstMap[ServerCoords.Y - 1][ServerCoords.X] == M)
+				{
+					FirstMap[ServerCoords.Y][ServerCoords.X] = O;
+					ServerCoins++;
+				}
 				FirstMap[ServerCoords.Y - 1][ServerCoords.X] = CS;
 				ServerCoords.Y--;
 				DrawPers(CS);
@@ -185,9 +209,10 @@ DWORD WINAPI MovementCharacters(void* p)
 			break;
 		}
 
-		char crd[2];
+		char crd[3];
 		crd[0] = ServerCoords.X;
 		crd[1] = ServerCoords.Y;
+		crd[2] = ServerCoins;
 
 	/*	SetConsoleCursorPosition(h, ServerCoords);
 		SetConsoleTextAttribute(h, 9);
@@ -198,7 +223,7 @@ DWORD WINAPI MovementCharacters(void* p)
 		cout << (char)1;*/
 		DrawPers(CL);
 
-		send(local, crd, 2, 0);
+		send(local, crd, 3, 0);
 		if (!thread)
 		{
 			Sleep(3000);
@@ -232,10 +257,10 @@ void Drawmap()
 			{
 				SetConsoleTextAttribute(h, 11);
 			}
-			/*else if (FirstMap[i][j] == M)
+			else if (FirstMap[i][j] == M)
 			{
 				SetConsoleTextAttribute(h, 13);
-			}*/
+			}
 			cout << FirstMap[i][j];
 			SetConsoleTextAttribute(h, 5);
 		}
@@ -264,17 +289,18 @@ DWORD WINAPI rec(void* p)
 
 	SetConsoleCursorPosition(h, ClientCoords);
 	SetConsoleTextAttribute(h, 12);
-	char message[2];
+	char message[3];
 	while (true)
 	{
 		
-		if (recv(s, message, 2, 0))
+		if (recv(s, message, 3, 0))
 		{
 			SetConsoleCursorPosition(h, ClientCoords);
 			cout << " ";
 			FirstMap[ClientCoords.Y][ClientCoords.X] = O;
 			ClientCoords.X = message[0];
 			ClientCoords.Y = message[1];
+			ClientCoins = message[2];
 			FirstMap[ClientCoords.Y][ClientCoords.X] = CL;
 		}
 		//SetConsoleCursorPosition(h, ClientCoords);

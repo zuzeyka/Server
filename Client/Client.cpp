@@ -136,7 +136,9 @@ int main(int argc, char** argv) // имя сервера при желании можно будет указать ч
 	//CreateThread(0, 0, Sender, &ConnectSocket, 0, 0);
 	CreateThread(0, 0, rec, &ConnectSocket, 0, 0);
 	CreateThread(0, 0, MovementCharacters, &ConnectSocket, 0, 0);
-	Check();
+	if (Timer())
+		Check();
+	
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -146,19 +146,18 @@ int main()
 	cci.dwSize = 100;
 	SetConsoleCursorInfo(h, &cci);
 
+	GenerationCoins();
 	Drawmap();
 	DrawPers(CS);
 	DrawPers(CL);
 	SendMap(ClientSocket);
-	/*SetConsoleCursorPosition(h, ServerCoords);
-	SetConsoleTextAttribute(h, 14);
-	cout << (char)1;*/
 
 
 	//CreateThread(0, 0, MovementCharacters, &ClientSocket, 0, 0);
 	CreateThread(0, 0, rec, &ClientSocket, 0, 0);
 	CreateThread(0, 0, MovementCharacters, &ClientSocket, 0, 0);
-	Check();
+	if (Timer())
+		Check();
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
