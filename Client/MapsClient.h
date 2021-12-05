@@ -32,10 +32,9 @@ enum Objects
 
 	O = 10, // Space
 	F = 5,
-	M = 4,
 	CL = 1,
 	CS = 2,
-	M = 3
+	M = 3,
 };
 
 char FirstMap[HEIGHT][WIDTH] = {};
